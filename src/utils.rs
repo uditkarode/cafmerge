@@ -59,17 +59,33 @@ pub fn handle_err(err: &DynError) {
 	}
 }
 
+pub enum TagKind {
+	RemoveProject,
+	Project,
+}
+
 // Miscellaneous
-pub fn handle_attr(attr_r: Result<Attribute<'_>, quick_xml::Error>) -> Result<String, DynError> {
+pub fn handle_attr(
+	attr_r: Result<Attribute<'_>, quick_xml::Error>,
+	kind: &TagKind,
+) -> Result<String, DynError> {
 	let attr = attr_r?;
 
-	return if attr.key == b"name" {
+	let attr_name = match kind {
+		TagKind::RemoveProject => b"name",
+		TagKind::Project => b"path",
+	};
+
+	return if attr.key == attr_name {
 		let s = String::from_utf8(attr.value.to_vec())?;
 		Ok(s)
 	} else {
 		Err(Box::new(CmError {
 			severity: Severity::Insignificant,
-			message: String::from("tag does not contain the field 'name'"),
+			message: format!(
+				"tag does not contain the field '{}'",
+				String::from_utf8(attr_name.to_vec())?
+			),
 		}))
 	};
 }

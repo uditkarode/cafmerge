@@ -46,7 +46,6 @@ fn do_fetch<'a>(
 	let mut fo = git2::FetchOptions::new();
 	fo.remote_callbacks(cb);
 	fo.download_tags(git2::AutotagOption::Auto);
-	println!("Fetching {} for repo", remote.name().unwrap());
 	remote.fetch(tags, Some(&mut fo), None)?;
 
 	// If there are local objects (we got a thin pack), then tell the user

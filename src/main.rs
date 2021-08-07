@@ -84,7 +84,7 @@ fn main() {
             continue;
         }
 
-        let res = git::pull(&path.caf_path, tag.to_string());
+        let res = git::pull(&path.fs_path, &path.caf_path, tag.to_string());
 
         match res {
             Ok(o) => match o {

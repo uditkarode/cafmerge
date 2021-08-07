@@ -14,10 +14,10 @@ use std::str;
 fn do_fetch<'a>(
 	repo: &'a git2::Repository,
 	tags: &[&str],
-	path: &str,
+	caf_path: &str,
 ) -> Result<git2::AnnotatedCommit<'a>, DynError> {
 	let mut cb = git2::RemoteCallbacks::new();
-	let remote_url = crate::CAF_BASE_URL.to_string() + path;
+	let remote_url = crate::CAF_BASE_URL.to_string() + caf_path;
 
 	let mut remote = repo
 		.find_remote(&remote_url)
@@ -80,7 +80,7 @@ fn normal_merge(
 	local: &git2::AnnotatedCommit,
 	remote: &git2::AnnotatedCommit,
 	tag: String,
-	path: String,
+	caf_path: String,
 ) -> Result<PullResult, git2::Error> {
 	let local_tree = repo.find_commit(local.id())?.tree()?;
 	let remote_tree = repo.find_commit(remote.id())?.tree()?;
@@ -101,7 +101,7 @@ fn normal_merge(
 		"Merge tag '{}' of {}{} into HEAD",
 		tag,
 		crate::CAF_BASE_URL,
-		path
+		caf_path
 	);
 	let sig = repo.signature()?;
 	let local_commit = repo.find_commit(local.id())?;
@@ -120,7 +120,7 @@ fn normal_merge(
 	Ok(PullResult::Clean)
 }
 
-pub fn pull(git_path: &str, tag: String) -> Result<PullResult, DynError> {
+pub fn pull(git_path: &str, caf_path: &str, tag: String) -> Result<PullResult, DynError> {
 	let repo = match Repository::open(git_path) {
 		Ok(r) => r,
 		Err(e) => {
@@ -131,7 +131,7 @@ pub fn pull(git_path: &str, tag: String) -> Result<PullResult, DynError> {
 		}
 	};
 
-	let fetch_commit = do_fetch(&repo, &[tag.as_str()], git_path)?;
+	let fetch_commit = do_fetch(&repo, &[tag.as_str()], caf_path)?;
 	let analysis = repo.merge_analysis(&[&fetch_commit])?;
 
 	if analysis.0.is_normal() || analysis.0.is_fast_forward() {
@@ -141,7 +141,7 @@ pub fn pull(git_path: &str, tag: String) -> Result<PullResult, DynError> {
 			&head_commit,
 			&fetch_commit,
 			tag,
-			git_path.to_string(),
+			caf_path.to_string(),
 		)?)
 	} else {
 		Ok(PullResult::NothingToDo)

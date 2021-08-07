@@ -69,7 +69,7 @@ pub fn handle_attr(
 		let attr = attr_r?;
 
 		match attr.key {
-			b"name" => {
+			b"path" => {
 				fs_path = Some(String::from_utf8(attr.value.to_vec())?);
 			}
 

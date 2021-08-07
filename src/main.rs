@@ -47,7 +47,7 @@ fn main() {
     let xmlp = matches.value_of("manifest").unwrap();
     let tag = matches.value_of("tag").unwrap();
 
-    let (paths, fs_paths) = match parser::parse_xml(xmlp) {
+    let paths = match parser::parse_xml(xmlp) {
         Ok(paths) => paths,
 
         Err(e) => {
@@ -58,20 +58,10 @@ fn main() {
         }
     };
 
-    let total = paths.iter().count();
+    for path in paths.iter() {
+        print!("merging into {}... ", path);
 
-    for (ind, path) in paths.iter().enumerate() {
-        // we already checked that the length of
-        // `fs_paths` and `paths` is the same
-        let fs_path = fs_paths.get(ind).unwrap();
-
-        print!(
-            "{} merging into {}... ",
-            format!("[{}/{}]", ind + 1, total).bold().dimmed(),
-            fs_path
-        );
-
-        let git_path = Path::new(fs_path);
+        let git_path = Path::new(path);
 
         if !git_path.exists() {
             utils::log_warn(format!("cannot access {}: No such directory", path).as_str());

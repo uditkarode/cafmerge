@@ -58,22 +58,33 @@ fn main() {
         }
     };
 
-    for path in paths.iter() {
-        print!("merging into {}... ", path);
+    let total = paths.iter().count();
 
-        let git_path = Path::new(path);
+    if total == 0 {
+        utils::log_err("could not find any merge targets, did you forget to add the caf attribute to your manifest entries?");
+        process::exit(1);
+    }
+
+    for (ind, path) in paths.iter().enumerate() {
+        print!(
+            "{} merging into {}... ",
+            format!("[{}/{}]", ind + 1, total).bold().dimmed(),
+            path.fs_path
+        );
+
+        let git_path = Path::new(&path.fs_path);
 
         if !git_path.exists() {
-            utils::log_warn(format!("cannot access {}: No such directory", path).as_str());
+            utils::log_warn(format!("cannot access {}: No such directory", path.fs_path).as_str());
             continue;
         }
 
         if !git_path.is_dir() {
-            utils::log_warn(format!("cannot use {}: Is not a directory", path).as_str());
+            utils::log_warn(format!("cannot use {}: Is not a directory", path.fs_path).as_str());
             continue;
         }
 
-        let res = git::pull(path, tag.to_string());
+        let res = git::pull(&path.caf_path, tag.to_string());
 
         match res {
             Ok(o) => match o {

@@ -1,5 +1,4 @@
 use colored::*;
-use quick_xml::events::attributes::Attribute;
 use std::process;
 use std::{error::Error, fmt};
 
@@ -60,16 +59,36 @@ pub fn handle_err(err: &DynError) {
 }
 
 // Miscellaneous
-pub fn handle_attr(attr_r: Result<Attribute<'_>, quick_xml::Error>) -> Result<String, DynError> {
-	let attr = attr_r?;
+pub fn handle_attr(
+	attrs: quick_xml::events::attributes::Attributes,
+) -> Result<(String, String), DynError> {
+	let mut caf_path: Option<String> = None;
+	let mut fs_path: Option<String> = None;
 
-	return if attr.key == b"name" {
-		let s = String::from_utf8(attr.value.to_vec())?;
-		Ok(s)
-	} else {
-		Err(Box::new(CmError {
+	for attr_r in attrs {
+		let attr = attr_r?;
+
+		match attr.key {
+			b"name" => {
+				fs_path = Some(String::from_utf8(attr.value.to_vec())?);
+			}
+
+			b"caf" => {
+				caf_path = Some(String::from_utf8(attr.value.to_vec())?);
+			}
+
+			_ => {}
+		}
+	}
+
+	Ok((
+		caf_path.ok_or(Box::new(CmError {
 			severity: Severity::Insignificant,
-			message: String::from("tag does not contain the field 'name'"),
-		}))
-	};
+			message: String::from("tag does not contain the `caf` attribute"),
+		}))?,
+		fs_path.ok_or(Box::new(CmError {
+			severity: Severity::Insignificant,
+			message: String::from("tag does not contain the `path` attribute"),
+		}))?,
+	))
 }

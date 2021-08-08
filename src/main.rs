@@ -3,11 +3,11 @@ mod parser;
 mod utils;
 
 use clap::{App, Arg};
-use colored::*;
+use colored::Colorize;
 use std::path::Path;
 use std::process;
 
-use crate::git::PullResult;
+use crate::git::GitResult;
 use crate::utils::handle_err;
 
 pub const CAF_BASE_URL: &str = "https://source.codeaurora.org/quic/la/";
@@ -40,12 +40,35 @@ fn main() {
                 .long("tag")
                 .value_name(format!("{}", "CAF_TAG".bold().yellow()).as_str())
                 .takes_value(true)
-                .required(true),
+                .required(false),
+        )
+        .arg(
+            Arg::new("conflicts")
+                .short('c')
+                .long("show-conflicts")
+                .takes_value(false)
+                .required(false),
         )
         .get_matches();
 
     let xmlp = matches.value_of("manifest").unwrap();
-    let tag = matches.value_of("tag").unwrap();
+
+    let show_conflicts = match matches.value_of("conflicts") {
+        Some(_) => true,
+        None => false,
+    };
+
+    let tag = if !show_conflicts {
+        match matches.value_of("tag") {
+            Some(tag_val) => Some(tag_val),
+            None => {
+                utils::log_err("you must specify a tag");
+                process::exit(1);
+            }
+        }
+    } else {
+        None
+    };
 
     let paths = match parser::parse_xml(xmlp) {
         Ok(paths) => paths,
@@ -65,36 +88,81 @@ fn main() {
         process::exit(1);
     }
 
-    for (ind, path) in paths.iter().enumerate() {
-        println!(
-            "{} merging into {}... ",
-            format!("[{}/{}]", ind + 1, total).bold().dimmed(),
-            path.fs_path
-        );
+    if show_conflicts {
+        println!("Checking for conflicts... \n");
 
-        let git_path = Path::new(&path.fs_path);
+        let mut conflicted = 0;
+        for path in paths.iter() {
+            let git_path = Path::new(&path.fs_path);
 
-        if !git_path.exists() {
-            utils::log_warn(format!("cannot access {}: No such directory", path.fs_path).as_str());
-            continue;
-        }
+            if !git_path.exists() {
+                continue;
+            }
 
-        if !git_path.is_dir() {
-            utils::log_warn(format!("cannot use {}: Is not a directory", path.fs_path).as_str());
-            continue;
-        }
+            if !git_path.is_dir() {
+                continue;
+            }
 
-        let res = git::pull(&path.fs_path, &path.caf_path, tag.to_string());
-
-        match res {
-            Ok(o) => match o {
-                PullResult::Clean => println!("{}", "clean".green()),
-                PullResult::Conflicted { conflicted_files } => {
-                    println!("{}", format!("{} conflicts", conflicted_files).red())
+            match git::is_conflicted(&path.fs_path) {
+                Ok(GitResult::Conflicted { conflicted_files }) => {
+                    conflicted += 1;
+                    println!(
+                        "{} {}: {} conflicts found",
+                        format!("[{}]", conflicted).dimmed(),
+                        path.fs_path,
+                        format!("{}", conflicted_files).red(),
+                    );
                 }
-                PullResult::NothingToDo => println!("{}", "nothing to do".yellow()),
-            },
-            Err(e) => handle_err(&e),
+
+                Err(e) => handle_err(&e),
+
+                _ => {}
+            }
+        }
+
+        println!(
+            "\n{} repositories contain unresolved conflicts",
+            format!("{}", conflicted).red().bold()
+        );
+    } else {
+        for (ind, path) in paths.iter().enumerate() {
+            println!(
+                "{} merging into {}... ",
+                format!("[{}/{}]", ind + 1, total).bold().dimmed(),
+                path.fs_path
+            );
+
+            let git_path = Path::new(&path.fs_path);
+
+            if !git_path.exists() {
+                utils::log_warn(
+                    format!("cannot access {}: No such directory", path.fs_path).as_str(),
+                );
+                continue;
+            }
+
+            if !git_path.is_dir() {
+                utils::log_warn(
+                    format!("cannot use {}: Is not a directory", path.fs_path).as_str(),
+                );
+                continue;
+            }
+
+            let res = git::pull(&path.fs_path, &path.caf_path, tag.unwrap().to_string());
+
+            match res {
+                Ok(o) => match o {
+                    GitResult::Clean => println!("{}", "Merged clean\n".green()),
+                    GitResult::Conflicted { conflicted_files } => {
+                        println!(
+                            "{}",
+                            format!("{} conflicts found\n", conflicted_files).red()
+                        )
+                    }
+                    GitResult::NothingToDo => println!("{}", "Nothing to do\n".yellow()),
+                },
+                Err(e) => handle_err(&e),
+            }
         }
     }
 }

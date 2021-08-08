@@ -1,7 +1,7 @@
 use crate::utils::{CmError, DynError, Severity};
 use git2::Repository;
 
-pub enum PullResult {
+pub enum GitResult {
 	Clean,
 	Conflicted { conflicted_files: usize },
 	NothingToDo,
@@ -80,7 +80,7 @@ fn normal_merge(
 	remote: &git2::AnnotatedCommit,
 	tag: String,
 	caf_path: String,
-) -> Result<PullResult, git2::Error> {
+) -> Result<GitResult, git2::Error> {
 	let local_tree = repo.find_commit(local.id())?.tree()?;
 	let remote_tree = repo.find_commit(remote.id())?.tree()?;
 	let ancestor = repo
@@ -90,7 +90,7 @@ fn normal_merge(
 
 	if idx.has_conflicts() {
 		repo.checkout_index(Some(&mut idx), None)?;
-		return Ok(PullResult::Conflicted {
+		return Ok(GitResult::Conflicted {
 			conflicted_files: idx.conflicts()?.count(),
 		});
 	}
@@ -116,10 +116,32 @@ fn normal_merge(
 	)?;
 	// Set working tree to match head.
 	repo.checkout_head(None)?;
-	Ok(PullResult::Clean)
+	Ok(GitResult::Clean)
 }
 
-pub fn pull(git_path: &str, caf_path: &str, tag: String) -> Result<PullResult, DynError> {
+pub fn is_conflicted(git_path: &str) -> Result<GitResult, DynError> {
+	let repo = match Repository::open(git_path) {
+		Ok(r) => r,
+		Err(e) => {
+			return Err(Box::new(CmError {
+				severity: Severity::Warning,
+				message: format!("couldn't find a git repo in '{}': {}", git_path, e),
+			}))
+		}
+	};
+
+	let idx = repo.index()?;
+
+	if idx.has_conflicts() {
+		Ok(GitResult::Conflicted {
+			conflicted_files: idx.conflicts()?.count(),
+		})
+	} else {
+		Ok(GitResult::Clean)
+	}
+}
+
+pub fn pull(git_path: &str, caf_path: &str, tag: String) -> Result<GitResult, DynError> {
 	let repo = match Repository::open(git_path) {
 		Ok(r) => r,
 		Err(e) => {
@@ -143,6 +165,6 @@ pub fn pull(git_path: &str, caf_path: &str, tag: String) -> Result<PullResult, D
 			caf_path.to_string(),
 		)?)
 	} else {
-		Ok(PullResult::NothingToDo)
+		Ok(GitResult::NothingToDo)
 	}
 }

@@ -114,7 +114,10 @@ fn main() {
                     );
                 }
 
-                Err(e) => handle_err(&e),
+                Err(e) => {
+                    print!("{}: ", path.fs_path);
+                    handle_err(&e);
+                }
 
                 _ => {}
             }

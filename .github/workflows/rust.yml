@@ -17,7 +17,7 @@ jobs:
       - run: cd /cafmerge && cargo build --release
       - run: strip /cafmerge/target/release/cafmerge
       - run: mkdir /builds
-      - run: upx --best --lzma /cafmerge/target/release/cafmerge -o /builds/cafmerge
+      - run: upx -9 /cafmerge/target/release/cafmerge -o /builds/cafmerge
       - uses: actions/upload-artifact@v2
         with:
           name: cafmerge

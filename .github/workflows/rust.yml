@@ -1,0 +1,24 @@
+name: "Bob The Builder"
+
+on:
+  push:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container:
+      image: rust:latest
+    steps:
+      - run: git clone https://github.com/${GITHUB_REPOSITORY} /cafmerge
+      - run: wget https://github.com/uditkarode/built_upx/releases/download/8a828474ca/upx
+      - run: chmod a+x upx
+      - run: mv upx /usr/local/bin/
+      - run: cd /cafmerge && cargo build --release
+      - run: strip /cafmerge/target/release/cafmerge
+      - run: mkdir /builds
+      - run: upx -9 /cafmerge/target/release/cafmerge -o /builds/cafmerge
+      - uses: actions/upload-artifact@v2
+        with:
+          name: cafmerge
+          path: /builds/cafmerge

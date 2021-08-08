@@ -66,7 +66,7 @@ fn main() {
     }
 
     for (ind, path) in paths.iter().enumerate() {
-        print!(
+        println!(
             "{} merging into {}... ",
             format!("[{}/{}]", ind + 1, total).bold().dimmed(),
             path.fs_path

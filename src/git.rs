@@ -44,13 +44,15 @@ fn do_fetch<'a>(
 	cb.transfer_progress(|stats| {
 		if stats.received_objects() == stats.total_objects() {
 			print!(
-				"Resolving deltas {}/{}\r",
+				"{}Resolving deltas {}/{}\r",
+				termion::clear::CurrentLine,
 				stats.indexed_deltas(),
 				stats.total_deltas()
 			);
 		} else if stats.total_objects() > 0 {
 			print!(
-				"Received {}/{} objects ({}) in {} bytes\r",
+				"{}Received {}/{} objects ({}) in {} bytes\r",
+				termion::clear::CurrentLine,
 				stats.received_objects(),
 				stats.total_objects(),
 				stats.indexed_objects(),
@@ -71,8 +73,9 @@ fn do_fetch<'a>(
 		let stats = remote.stats();
 		if stats.local_objects() > 0 {
 			println!(
-				"\rReceived {}/{} objects in {} bytes (used {} local \
+				"{}\rReceived {}/{} objects in {} bytes (used {} local \
 						 objects)",
+				termion::clear::CurrentLine,
 				stats.indexed_objects(),
 				stats.total_objects(),
 				stats.received_bytes(),
@@ -80,7 +83,8 @@ fn do_fetch<'a>(
 			);
 		} else {
 			println!(
-				"\rReceived {}/{} objects in {} bytes",
+				"{}\rReceived {}/{} objects in {} bytes",
+				termion::clear::CurrentLine,
 				stats.indexed_objects(),
 				stats.total_objects(),
 				stats.received_bytes()

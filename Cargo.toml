@@ -10,6 +10,7 @@ colored = "2"
 quick-xml = "0.22.0"
 clap = "3.0.0-beta.2"
 git2 = "0.13.20"
+termion = "1.5.6"
 
 [profile.release]
 lto = true

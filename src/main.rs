@@ -53,10 +53,7 @@ fn main() {
 
     let xmlp = matches.value_of("manifest").unwrap();
 
-    let show_conflicts = match matches.value_of("conflicts") {
-        Some(_) => true,
-        None => false,
-    };
+    let show_conflicts = matches.is_present("conflicts");
 
     let tag = if !show_conflicts {
         match matches.value_of("tag") {

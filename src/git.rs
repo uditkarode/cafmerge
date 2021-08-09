@@ -69,6 +69,12 @@ fn do_fetch<'a>(
 		);
 	}
 
+	// Update the references in the remote's namespace to point to the right
+	// commits. This may be needed even if there was no packfile to download,
+	// which can happen e.g. when the branches have been changed but all the
+	// needed objects are available locally.
+	remote.update_tips(None, true, git2::AutotagOption::Unspecified, None)?;
+
 	let fetch_head = repo.find_reference("FETCH_HEAD")?;
 	Ok(repo.reference_to_annotated_commit(&fetch_head)?)
 }

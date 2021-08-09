@@ -14,7 +14,7 @@ pub const CAF_BASE_URL: &str = "https://source.codeaurora.org/quic/la/";
 
 fn main() {
     let matches = App::new(format!("{}", "cafmerge".bold().yellow()))
-        .version("0.2")
+        .version("1.0")
         .author(
             format!(
                 "{} {} {}",

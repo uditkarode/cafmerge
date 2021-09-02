@@ -118,6 +118,7 @@ fn normal_merge(
 	let ancestor = repo
 		.find_commit(repo.merge_base(local.id(), remote.id())?)?
 		.tree()?;
+	
 	let mut idx = repo.merge_trees(&ancestor, &local_tree, &remote_tree, None)?;
 
 	if idx.has_conflicts() {
@@ -126,6 +127,11 @@ fn normal_merge(
 			conflicted_files: idx.conflicts()?.count(),
 		});
 	}
+	
+	if idx.is_empty() {
+		return Ok(GitResult::NothingToDo);
+	}
+	
 	let result_tree = repo.find_tree(idx.write_tree_to(repo)?)?;
 	// now create the merge commit
 	let msg = format!(
